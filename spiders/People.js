@@ -2,8 +2,9 @@ let cheerio=require('cheerio') ;
 let superagent = require("superagent");
 let request = require("superagent-charset")(superagent);
 let mysql = require("mysql");
+const Url = require("url");
 let db = require("../db/DB");
-let util = require("../utils/util")
+let util = require("../utils/util");
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 /**
  * 人民网类
@@ -87,7 +88,7 @@ People.prototype = {
     },
     picArticle: function (url) {
         /**
-         * 对文章的爬虫
+         * 对以图片为主的爬虫
          */
         return new Promise((resolve, reject) => {
             request.get(url)
@@ -99,24 +100,26 @@ People.prototype = {
                     let $ = cheerio.load(res.text);
                     let title = $(".title h1").text();
                     let content = $(".content").text();
-                    let picLength = $(".page_n a").length -1 ;
+                    let picLength = $(".page_n a:not(#prev):not(#next)").length -1 ;
+                    let Urls = [];
                     let picUrls = [];
-                    for(let i=0 ;i < picLength;i++){
-                        (async function(){
-
-                        })()
+                    for(let i = 1;i < picLength;i++){
+                        Urls.push(url .replace(".html","")+ "-" + (i+1)+".html");
                     }
-                    // console.log({
-                    //     title: title,
-                    //     content: content
-                    // })
+                    console.log(Urls);
                     resolve({
                         title: title,
-                        content: content
+                        content: content,
+                        urls:[]
                     })
                 })
         })
     },
+    /**
+     * 这个是只含文本类文章的处理
+     * @param url
+     * @returns {Promise<any>}
+     */
     article: function (url) {
         return new Promise((resolve, reject) => {
             request.get(url)
@@ -143,6 +146,11 @@ People.prototype = {
                 })
         })
     },
+    /**
+     * 这个是视频类文章的处理
+     * @param url
+     * @returns {Promise<any>}
+     */
     tv: function (url) {
         return new Promise((resolve, reject) => {
             request.get(url)
@@ -160,6 +168,11 @@ People.prototype = {
                 })
         })
     },
+    /**
+     * 适配器啦
+     * @param url
+     * @returns {Promise<any>}
+     */
     adapter: function (url) {
         let self = this;
             return new Promise((resolve, reject) => {
@@ -199,6 +212,11 @@ People.prototype = {
                     }
                 })
         },
+    /**
+     * 我只是想爬个图片
+     * @param url
+     * @returns {Promise<any>}
+     */
         pic:function(url){
             return new Promise((resolve,reject)=>{
                 request.get(url)
@@ -227,8 +245,15 @@ People.prototype = {
                                     subTitle = $(".sub").text(),
                                     author = $(".author").text(),
                                     time = $(".box01 .fl").text(),
-                                    content = $(".text_con_left").text();
-                                let images = $(".text_con_left img");
+                                    content = $(".box_con").text();
+                                let images = $(".box_con img");
+                                let imageUrls = [];
+                                for(let i=0;i<images.length;i++){
+                                    let test = Url.parse(url);
+                                    test = test.hostname;
+                                    $(images[i]).attr("src",util.urlTest($(images[i]).attr("src"),'http://'+test))
+                                    imageUrls.push($(images[i]).attr("src"));
+                                }
                                 console.log(images);
                                 resolve({
                                     preTitle:preTitle,
@@ -236,16 +261,29 @@ People.prototype = {
                                     subTitle:subTitle,
                                     author:author,
                                     time:time,
-                                    content:content
+                                    content:content,
+                                    imgUrls:imageUrls
                                 })
                       }).catch(err=>{
                           console.log(err);
                     })
              })
+        },
+        singlePicUrl:function (url) {
+            return new Promise((resolve,reject)=>{
+                util.getgbkPages(url)
+                    .then(text=>{
+                        let $ = cheerio.load(text);
+                        resolve($(".pic_c img").attr("src"));
+                    }).catch(err=>{
+                        console.log(err);
+                        reject(err);
+                    })
+            })
         }
     }
     let test = new People();
-test.arctlePic("http://sx.people.com.cn/n2/2017/1202/c189132-30987510.html")
+test.singlePicUrl("http://pic.people.com.cn/n1/2017/1213/c1016-29704989.html")
     .then(row=>{
         console.log(row)
     })
