@@ -11,7 +11,15 @@ process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
  * @constructor
  */
 let People = function(){};
+/**
+ *
+ * @type {{index: People.index, homePage: People.homePage, picArticle: People.picArticle, article: People.article, tv: People.tv, adapter: People.adapter, pic: People.pic, arctlePic: People.arctlePic, singlePicUrl: People.singlePicUrl}}
+ */
 People.prototype = {
+    /**
+     * 首页的轮播图爬取
+     * @returns {Promise}
+     */
     index:function(){
         return new Promise((resolve, reject) => {
             request.get("https://www.people.com.cn")
@@ -58,10 +66,12 @@ People.prototype = {
                 })
         })
     },
+    /**
+     * 各种主页的轮播图
+     * @param url
+     * @returns {Promise}
+     */
     homePage: function (url) {
-        /**
-         * 返回Promise
-         */
         return new Promise((resolve, reject) => {
             request.get(url)
                 .charset("gbk")
@@ -86,10 +96,12 @@ People.prototype = {
                 })
         })
     },
+    /**
+     * 图片新闻
+     * @param url
+     * @returns {Promise}
+     */
     picArticle: function (url) {
-        /**
-         * 对以图片为主的爬虫
-         */
         return new Promise((resolve, reject) => {
             request.get(url)
                 .charset("gbk")
@@ -107,11 +119,11 @@ People.prototype = {
                         Urls.push(url .replace(".html","")+ "-" + (i+1)+".html");
                     }
                     console.log(Urls);
-                    resolve({
-                        title: title,
-                        content: content,
-                        urls:[]
-                    })
+                            resolve({
+                                title: title,
+                                content: content,
+                                urls:Urls
+                            })
                 })
         })
     },
@@ -179,34 +191,47 @@ People.prototype = {
                     let tvPatt = /tv./i,
                         picPatt = /pic./i;
                     if (tvPatt.exec(url)) {
-                        resolve({
-                            type:'tv',
-                            url:this.tv(url)
-                    });
+                        this.tv(url)
+                            .then(rows=>{
+                                resolve({
+                                    type:'tv',
+                                    data:rows
+                                })
+                            }).catch(err=>{
+                                reject(err)
+                            })
                     } else if (picPatt.exec(url)) {
-                        resolve(this.picArticle(url));
+                        this.picArticle(url)
+                            .then(rows=>{
+                                resolve(rows)
+                            }).catch(err=>{
+                                reject(err)
+                            })
                     } else {
-                        getgbkPages(url)
+                        util.getgbkPages(url)
                             .then(text=>{
                                 let $ = cheerio.load(text);
-                                let PicTest = $(".title h1").text();
-                                let articleTest = $(".text_title h1").text();
-                                if(PicTest != undefined){
-                                    resolve({
-
-                                    })
-                                }else if(articleTest != undefined){
-                                    resolve({
-                                         preTitle : $(".text_title h3").text(),
-                                        title : $(".text_title h1").text(),
-                                        time : $(".box01 .fl").text(),
-                                        content : $("#rwb_zw").children().text()
-                                    })
+                                if($(".pic_c").length != 0){
+                                    this.picArticle(url)
+                                        .then(rows=>{
+                                            resolve(rows);
+                                        }).catch(err=>{
+                                            reject(err)
+                                        })
+                                }else if($(".box_con img").length != 0){
+                                    this.arctlePic(url)
+                                        .then(rows=>{
+                                            resolve(rows)
+                                        }).catch(err=>{
+                                            reject(err)
+                                        })
                                 }else{
-                                    resolve({
-                                         title : $(".title h1").text(),
-                                         content : $(".content").text()
-                                    })
+                                    this.article(url)
+                                        .then(rows=>{
+                                            resolve(rows);
+                                        }).catch(err=>{
+                                            reject(err);
+                                        })
                                 }
                             })
                     }
@@ -227,10 +252,12 @@ People.prototype = {
                     })
             })
         },
+    /**
+     * 图文
+     * @param url
+     * @returns {Promise}
+     */
         arctlePic:function(url){
-            /**
-             * 这个是真正的图文   囧  o(╯□╰)o
-             */
             return new Promise((resolve,reject)=>{
                     let text ;
                     util.getgbkPages(url)
@@ -269,6 +296,11 @@ People.prototype = {
                     })
              })
         },
+    /**
+     * 获取图片新闻中的每一张图片
+     * @param url
+     * @returns {Promise}
+     */
         singlePicUrl:function (url) {
             return new Promise((resolve,reject)=>{
                 util.getgbkPages(url)
@@ -283,25 +315,8 @@ People.prototype = {
         }
     }
     let test = new People();
-test.singlePicUrl("http://pic.people.com.cn/n1/2017/1213/c1016-29704989.html")
-    .then(row=>{
-        console.log(row)
-    })
+    test.arctlePic("http://finance.people.com.cn/n1/2017/1214/c1004-29705398.html")
+        .then(rows=>{
+            console.log(rows);
+        })
 module.exports = People;
-let getgbkPages=function(url){
-    return new Promise((resolve,reject)=>{
-        console.log('=============')
-        console.log(url)
-        console.log('=============')
-        request.get(url)
-            .charset("gbk")
-            .end((err,res)=>{
-                if(err){
-                    reject(err);
-                    console.log(err);
-                }
-                // console.log(res);
-                resolve(res.text);
-            })
-    })
-}
