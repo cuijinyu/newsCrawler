@@ -28,7 +28,7 @@ async function go(){
             let title = await util.titleEscape(result.title);
             let content =await util.contentEscape(result.content);
             if(title != undefined && content != undefined){
-                await db.query(`insert into article (title,content) value(${title},${content})`);
+                await db.query(`insert into arc (title,content) value(${title},${content})`);
             }
             count ++;
             console.log(`--------------------->>>>>>>> ${count} pages`);
@@ -40,9 +40,24 @@ async function go(){
             for( let j = 0 ; j< focusUrls.length ; j++){
                 let result = await spi.adapter(focusUrls[j].url);
                 let title = await util.titleEscape(result.title);
+                let sub = await util.titleEscape(result.subTitle);
+                let pre = await util.titleEscape(result.preTitle);
+                let picUrls = result.imgUrls;
                 let content =await util.contentEscape(result.content);
+                let urls = result.urls;
+                picUrls = mysql.escape(util.checkExist(picUrls));
+                picUrls = picUrls.toString().replace(/,/g," ");
+                if(urls != undefined){
+                    for(let i=0;i<urls.length;i++){
+                        let tempUrl =await spi.singlePicUrl(urls[i]);
+                        picUrls+=tempUrl+" ";
+                    }
+                }
+                picUrls = mysql.escape(picUrls);
+                sub = mysql.escape(util.checkExist(sub));
+                pre = mysql.escape(util.checkExist(pre));
                 if(title != undefined && content != undefined)
-                    await db.query(`insert into article (title,content) value(${title},${content})`);
+                    await db.query(`insert into arc (title,content,preTitle,subTitle,imgUrls) value(${title},${content},${pre},${sub},${picUrls})`);
                 count ++;
                 console.log(`--------------------->>>>>>>> ${count} pages`);
             }
