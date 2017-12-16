@@ -9,9 +9,55 @@ async function go(){
         let index = await spi.index();
         let focusUrls = [],
             cities = [],
-            ports =[];
+            ports =[
+                {
+                    name:"政治",
+                    url:"http://politics.people.com.cn/"
+                },
+                {
+                    name:"国际",
+                    url:"http://world.people.com.cn/"
+                },
+                {
+                    name:"台湾",
+                    url:"http://tw.people.com.cn/"
+                },
+                {
+                    name:"法制",
+                    url:"http://legal.people.com.cn/"
+                },
+                {
+                    name:"社会",
+                    url:"http://society.people.com.cn/"
+                },
+                {
+                    name:"港澳",
+                    url:"http://hm.people.com.cn/"
+                },
+                {
+                    name:"环保",
+                    url:"http://env.people.com.cn/"
+                },
+                {
+                    name:"能源",
+                    url:"http://energy.people.com.cn/"
+                },
+                {
+                    name:"科技",
+                    url:"http://scitech.people.com.cn/"
+                },
+                {
+                    name:"体育",
+                    url:"http://sports.people.com.cn/"
+                },{
+                    name:"游戏",
+                    url:"http://game.people.com.cn/"
+                }];
         cities = index.city;
-        ports = index.portList;
+        // ports = index.port;
+        console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ${ports}
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!`)
         console.log("CITIES:++++++"+cities[0].url);
         for(let i=0 ;i< index.focusList.length;i++){
             focusUrls.push(index.focusList[i].url);
@@ -33,10 +79,14 @@ async function go(){
             count ++;
             console.log(`--------------------->>>>>>>> ${count} pages`);
         }
-        for(let i=0;i<cities.length;i++){
-            console.log(cities[i].url);
-            focusUrls = await spi.homePage(cities[i].url);
-            focusUrls = await util.testAll(focusUrls,cities[i].url);
+        for(let i=0;i<ports.length;i++){
+            if(/fangtan/i.exec(ports[i].url)){
+                continue;
+            }
+            let topic = mysql.escape(ports[i].name);
+            console.log(ports[i].url);
+            focusUrls = await spi.homePage(ports[i].url);
+            focusUrls = await util.testAll(focusUrls,ports[i].url);
             for( let j = 0 ; j< focusUrls.length ; j++){
                 let result = await spi.adapter(focusUrls[j].url);
                 let title = await util.titleEscape(result.title);
@@ -57,7 +107,7 @@ async function go(){
                 sub = mysql.escape(util.checkExist(sub));
                 pre = mysql.escape(util.checkExist(pre));
                 if(title != undefined && content != undefined)
-                    await db.query(`insert into arc (title,content,preTitle,subTitle,imgUrls) value(${title},${content},${pre},${sub},${picUrls})`);
+                    await db.query(`insert into arc (title,content,preTitle,subTitle,imgUrls,topic) value(${title},${content},${pre},${sub},${picUrls},${topic})`);
                 count ++;
                 console.log(`--------------------->>>>>>>> ${count} pages`);
             }
