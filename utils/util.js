@@ -48,6 +48,9 @@ module.exports={
     },
     urlTest:function(url,main){
         let patt = /http:/i;
+        if(main[main.length-1]=='/'){
+            main = main.slice(0,main.length-1);
+        }
         if(patt.exec(url)){
             console.log("url" + url + "passed!!!!!!");
             return url;
@@ -56,15 +59,29 @@ module.exports={
         }
     },
     testAll:function (urls,main) {
-    return new Promise((resolve => {
-        let i=0;
-        for(i;i<urls.length;i++){
-            urls[i].url = urls[i].url.trim();
-            urls[i].url=this.urlTest(urls[i].url,main);
+        return new Promise((resolve => {
+            let i=0;
+            for(i;i<urls.length;i++){
+                if(urls[i].url== undefined){
+                    continue;
+                }
+                urls[i].url = urls[i].url.trim();
+                urls[i].url=this.urlTest(urls[i].url,main);
+            }
+            if(i == urls.length){
+                resolve(urls);
+            }
+        }))
+    },
+    /**
+     * 检查是否为undefined
+     * @param content
+     */
+    checkExist:function (content) {
+        if(content == undefined){
+            return "";
+        }else{
+            return content;
         }
-        if(i == urls.length){
-            resolve(urls);
-        }
-    }))
-}
+    }
 }
