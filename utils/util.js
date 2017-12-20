@@ -83,5 +83,18 @@ module.exports={
         }else{
             return content;
         }
+    },
+    getPage:function(url){
+        return new Promise((resolve,reject)=>{
+            superagent.get(url)
+                .end((err,res)=>{
+                    if(err){
+                        reject(err)
+                    }
+                    else{
+                        resolve(res.text)
+                    }
+                })
+        })
     }
 }
