@@ -1,6 +1,7 @@
 
-let people = require("./spiders/People")
-        // xinhua   = require("./spiders/xinhua");
+let people = require("./spiders/People"),
+    xinhua = require("./spiders/xinhua"),
+    Stdaily = require("./spiders/Stdaily");
 /**
  *
  * @param type
@@ -14,9 +15,10 @@ let Spider = function (type) {
     }else{
         return new Spider(type);
     }
-}
+};
 Spider.prototype = {
     People:people,
-    // Xinhua:xinhua
-}
+    Xinhua:xinhua,
+    Stdaily:Stdaily
+};
 module.exports = Spider;
